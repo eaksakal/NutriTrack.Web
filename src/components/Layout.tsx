@@ -18,6 +18,7 @@ export default function Layout() {
           <nav className="nav">
             <Link to="/">Dashboard</Link>
             <Link to="/search">Suche</Link>
+            <Link to="/ai">Per Text</Link>
             <Link to="/goals">Ziele</Link>
             <span className="user-email">{email}</span>
             <button onClick={handleLogout} className="btn-logout">Logout</button>
