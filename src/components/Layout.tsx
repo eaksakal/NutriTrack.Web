@@ -15,11 +15,11 @@ export default function Layout() {
       <header className="header">
         <div className="header-inner">
           <Link to="/" className="logo">NutriTrack</Link>
+          {/* Keine Seitennavigation mehr: Eintragen, Suchen und Ziele liegen im Overlay des
+              Dashboards, das ueber das "+" aufgeht. Die Routen /ai, /search und /goals bleiben
+              erreichbar, damit Lesezeichen und Deep-Links weiter funktionieren - sie sind hier
+              nur nicht mehr verlinkt. */}
           <nav className="nav">
-            <Link to="/">Dashboard</Link>
-            <Link to="/search">Suche</Link>
-            <Link to="/ai">Per Text</Link>
-            <Link to="/goals">Ziele</Link>
             <span className="user-email">{email}</span>
             <button onClick={handleLogout} className="btn-logout">Logout</button>
           </nav>

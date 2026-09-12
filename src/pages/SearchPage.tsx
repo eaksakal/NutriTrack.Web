@@ -3,8 +3,9 @@ import { foodApi, type FoodItem } from '../api/food';
 import { mealsApi, quantityError, MAX_QUANTITY_IN_GRAMS } from '../api/meals';
 import { MEAL_TYPES, mealTypeLabel, isMealType, type MealTypeName } from '../constants/mealTypes';
 import { apiErrorMessage } from '../api/errors';
+import type { PanelProps } from '../components/PanelProps';
 
-export default function SearchPage() {
+export default function SearchPage({ date, onDone, embedded }: PanelProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,9 +65,21 @@ export default function SearchPage() {
         potassium: selected.potassium,
         quantityInGrams: quantity,
         mealType,
+        // Ohne Datum entscheidet der Server (heute). Im Overlay reicht das Dashboard den Tag
+        // durch, den seine Datumsnavigation gerade zeigt - so laesst sich Gestriges nachtragen.
+        date,
       });
       setAddSuccess(`${selected.name} (${quantity}g) hinzugefügt!`);
       setSelected(null);
+
+      // Eingebettet sofort zurueck zum Tagebuch: der Nutzer sieht den Eintrag dann direkt in der
+      // Liste, was mehr sagt als eine Erfolgsmeldung. Als eigene Seite bleibt er stehen und kann
+      // gleich den naechsten Treffer hinzufuegen.
+      if (onDone) {
+        onDone();
+        return;
+      }
+
       setTimeout(() => setAddSuccess(''), 3000);
     } catch (err) {
       // Menge und Mahlzeitentyp weist die API mit einem konkreten Satz im Feld "error" zurueck.
@@ -80,7 +93,7 @@ export default function SearchPage() {
 
   return (
     <div className="search-page">
-      <h1>Lebensmittel suchen</h1>
+      {!embedded && <h1>Lebensmittel suchen</h1>}
 
       {addSuccess && <div className="success-msg">{addSuccess}</div>}
       {addError && <div className="error-msg">{addError}</div>}

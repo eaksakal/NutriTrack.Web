@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { aiApi, MAX_MESSAGES, type ChatMessage, type NutrientEstimate, type ParsedItem } from '../api/ai';
+import type { PanelProps } from '../components/PanelProps';
 import { apiErrorMessage } from '../api/errors';
 import type { FoodItem } from '../api/food';
 import { mealsApi, quantityError, MAX_QUANTITY_IN_GRAMS } from '../api/meals';
@@ -47,7 +48,7 @@ function herkunft(source: ParsedItem['source']): string {
   }
 }
 
-export default function AiEntryPage() {
+export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -172,6 +173,9 @@ export default function AiEntryPage() {
           potassium: source?.potassium,
           quantityInGrams: draft.quantityInGrams,
           mealType: draft.mealType,
+          // Ohne Datum entscheidet der Server (heute). Das Overlay reicht den Tag durch, den
+          // die Datumsnavigation des Dashboards gerade zeigt - so laesst sich Gestriges nachtragen.
+          date,
         });
         saved.push(index);
       } catch {
@@ -192,6 +196,11 @@ export default function AiEntryPage() {
       return;
     }
 
+    if (onDone) {
+      onDone();
+      return;
+    }
+
     navigate('/');
   };
 
@@ -202,7 +211,7 @@ export default function AiEntryPage() {
 
   return (
     <div className="ai-entry">
-      <h1>Per Text erfassen</h1>
+      {!embedded && <h1>Per Text erfassen</h1>}
       <p className="ai-hint">
         Schreib einfach, was du gegessen hast &mdash; zum Beispiel &bdquo;2 Br&ouml;tchen mit Gouda und ein Kaffee&ldquo;.
       </p>

@@ -11,6 +11,7 @@ import { goalsApi, type Goals } from '../api/goals';
 import { MEAL_TYPES, mealTypeLabel, isMealType, type MealTypeName } from '../constants/mealTypes';
 import { apiErrorMessage } from '../api/errors';
 import { formatNutrient, type NutrientUnit } from '../utils/nutrients';
+import EntryOverlay from '../components/EntryOverlay';
 
 // Datum und Uhrzeit sind in der API fachlich LOKALE Zeit (MealEndpoints.LocalToday, DateTime.Now).
 // toISOString() rechnet dagegen nach UTC: in Europe/Berlin stand hier zwischen Mitternacht und
@@ -25,6 +26,7 @@ function formatDate(date: Date): string {
 
 export default function DashboardPage() {
   const [date, setDate] = useState(formatDate(new Date()));
+  const [overlayOffen, setOverlayOffen] = useState(false);
   const [summary, setSummary] = useState<DailySummary | null>(null);
   const [goals, setGoals] = useState<Goals | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +121,31 @@ export default function DashboardPage() {
         <button onClick={() => changeDate(-1)} className="btn-secondary">&larr;</button>
         <input type="date" value={date} onChange={e => setDate(e.target.value)} />
         <button onClick={() => changeDate(1)} className="btn-secondary">&rarr;</button>
+
+        {/* Der einzige Weg zum Eintragen. Er steht neben der Datumsnavigation, weil das Overlay
+            genau auf den dort gewaehlten Tag bucht - Gestriges nachtragen heisst also: einen Tag
+            zurueck, dann "+". */}
+        <button
+          type="button"
+          className="btn-add"
+          onClick={() => setOverlayOffen(true)}
+          aria-label="Eintragen"
+          title="Eintragen"
+        >
+          +
+        </button>
       </div>
+
+      {overlayOffen && (
+        <EntryOverlay
+          date={date}
+          onClose={() => setOverlayOffen(false)}
+          onSaved={() => {
+            setOverlayOffen(false);
+            loadSummary(false);
+          }}
+        />
+      )}
 
       {summary && (
         <>

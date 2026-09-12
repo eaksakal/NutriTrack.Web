@@ -34,3 +34,36 @@ export const goalsApi = {
   save: (data: UpsertGoalsRequest) =>
     client.put<Goals>('/api/goals', data),
 };
+
+export interface SuggestGoalsRequest {
+  weightKg: number;
+  heightCm: number;
+  age: number;
+  sex: 'male' | 'female';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
+  wish: string;
+}
+
+export interface GoalsSuggestion {
+  calorieGoal: number;
+  proteinGoal: number;
+  carbohydrateGoal: number;
+  fatGoal: number;
+  basalMetabolicRate: number;
+  maintenanceCalories: number;
+  explanation: string;
+  interpretedWish: string;
+}
+
+/**
+ * Schlaegt Ziele vor, speichert aber nichts - uebernommen wird ueber goalsApi.save.
+ *
+ * Von den hier gesendeten Daten verlaesst nur `wish` unseren Server. Gewicht, Groesse, Alter und
+ * Geschlecht braucht das Backend fuer die Formel und gibt sie nicht weiter; im kostenlosen
+ * Gemini-Kontingent wuerde Google Uebermitteltes zum Training nutzen und von Menschen pruefen
+ * lassen, und Koerperdaten haben dort nichts verloren.
+ */
+export const goalsSuggestApi = {
+  suggest: (body: SuggestGoalsRequest) =>
+    client.post<GoalsSuggestion>('/api/goals/suggest', body),
+};
