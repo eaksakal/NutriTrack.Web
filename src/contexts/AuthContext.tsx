@@ -1,16 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { authApi, type AuthResponse } from '../api/auth';
-
-interface AuthState {
-  token: string | null;
-  email: string | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
+import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -34,10 +24,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    const currentToken = localStorage.getItem('token');
+
     localStorage.removeItem('token');
     localStorage.removeItem('email');
     setToken(null);
     setEmail(null);
+
+    // Abmelden im Browser allein wirft nur den localStorage weg - das ausgestellte Token bliebe
+    // bis zum Ablauf gueltig. Dieser Aufruf dreht serverseitig den SecurityStamp weiter und macht
+    // es damit sofort ungueltig. Bewusst ohne await: die Oberflaeche ist bereits abgemeldet, und
+    // ein Netzfehler oder ein bereits abgelaufenes Token darf das nicht aufhalten.
+    if (currentToken) {
+      authApi.logout(currentToken).catch(() => undefined);
+    }
   };
 
   return (
@@ -45,10 +45,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
 }

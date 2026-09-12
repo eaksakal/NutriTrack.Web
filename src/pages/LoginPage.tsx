@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { apiErrorMessage } from '../api/errors';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,8 +18,11 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate('/');
-    } catch {
-      setError('Login fehlgeschlagen. Bitte prüfe deine Zugangsdaten.');
+    } catch (err) {
+      // Der Login-Endpunkt antwortet auf falsche Zugangsdaten mit einem 401 ohne Body - dann
+      // bleibt es beim Standardtext. Kuenftige Fehlerantworten mit Meldung (etwa eine
+      // Lockout-Sperre) erreichen den Nutzer ueber denselben Weg wie bei der Registrierung.
+      setError(apiErrorMessage(err, 'Login fehlgeschlagen. Bitte prüfe deine Zugangsdaten.'));
     } finally {
       setLoading(false);
     }

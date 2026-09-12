@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { foodApi, type FoodItem } from '../api/food';
-import { mealsApi } from '../api/meals';
-
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+import { mealsApi, quantityError, MAX_QUANTITY_IN_GRAMS } from '../api/meals';
+import { MEAL_TYPES, mealTypeLabel, isMealType, type MealTypeName } from '../constants/mealTypes';
+import { apiErrorMessage } from '../api/errors';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -10,8 +10,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<FoodItem | null>(null);
   const [quantity, setQuantity] = useState(100);
-  const [mealType, setMealType] = useState('Lunch');
+  const [mealType, setMealType] = useState<MealTypeName>('Lunch');
   const [addSuccess, setAddSuccess] = useState('');
+  const [addError, setAddError] = useState('');
 
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -30,6 +31,18 @@ export default function SearchPage() {
 
   const handleAdd = async () => {
     if (!selected) return;
+
+    // Der Knopf steht ausserhalb eines <form>, also greift die Browser-Validierung des
+    // Zahlenfelds (min/max) hier nie - ohne diese Pruefung ginge eine 20000-g-Eingabe an die
+    // API und kaeme als nacktes 400 zurueck.
+    const invalid = quantityError(quantity);
+    if (invalid) {
+      setAddError(invalid);
+      setAddSuccess('');
+      return;
+    }
+
+    setAddError('');
     try {
       await mealsApi.create({
         foodName: selected.name,
@@ -55,8 +68,11 @@ export default function SearchPage() {
       setAddSuccess(`${selected.name} (${quantity}g) hinzugefügt!`);
       setSelected(null);
       setTimeout(() => setAddSuccess(''), 3000);
-    } catch {
-      alert('Fehler beim Hinzufügen');
+    } catch (err) {
+      // Menge und Mahlzeitentyp weist die API mit einem konkreten Satz im Feld "error" zurueck.
+      // Ein alert() mit Einheitstext haette diese Begruendung verworfen - und den Nutzer im
+      // Zweifel raten lassen, welches der beiden Felder gemeint ist.
+      setAddError(apiErrorMessage(err, 'Hinzufügen fehlgeschlagen.'));
     }
   };
 
@@ -67,6 +83,7 @@ export default function SearchPage() {
       <h1>Lebensmittel suchen</h1>
 
       {addSuccess && <div className="success-msg">{addSuccess}</div>}
+      {addError && <div className="error-msg">{addError}</div>}
 
       <form onSubmit={handleSearch} className="search-bar">
         <input
@@ -86,12 +103,25 @@ export default function SearchPage() {
           <div className="add-controls">
             <label>
               Menge (g)
-              <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} min={1} />
+              <input
+                type="number"
+                value={quantity}
+                onChange={e => setQuantity(Number(e.target.value))}
+                min={1}
+                max={MAX_QUANTITY_IN_GRAMS}
+              />
             </label>
             <label>
               Mahlzeit
-              <select value={mealType} onChange={e => setMealType(e.target.value)}>
-                {MEAL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              <select
+                value={mealType}
+                onChange={e => {
+                  // Die Optionen stammen aus MEAL_TYPES; der Guard bringt den DOM-String
+                  // wieder auf den Typ, den die API akzeptiert.
+                  if (isMealType(e.target.value)) setMealType(e.target.value);
+                }}
+              >
+                {MEAL_TYPES.map(t => <option key={t} value={t}>{mealTypeLabel(t)}</option>)}
               </select>
             </label>
             <button onClick={handleAdd} className="btn-primary">Hinzufügen</button>

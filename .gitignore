@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Lokale Umgebungsdateien. Heute steht in .env nur VITE_API_URL, aber Vite backt jede
+# VITE_*-Variable ins Bundle und die Datei ist der Ort, an dem kuenftige Werte landen - einmal
+# eingecheckt, bleiben sie in der Historie stehen. Das Api-Repo ignoriert .env bereits ebenso.
+# .env.example ist die Gegenausnahme: die Vorlage MUSS versioniert sein, sonst weiss der
+# naechste Entwickler nicht, welche Variablen erwartet werden.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

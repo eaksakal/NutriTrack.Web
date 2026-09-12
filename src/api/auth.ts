@@ -25,4 +25,13 @@ export const authApi = {
     client.post<AuthResponse>('/api/auth/login', data),
 
   me: () => client.get<{ userId: string; email: string }>('/api/auth/me'),
+
+  // Das Token wird ausdruecklich mitgegeben, statt es dem Request-Interceptor aus dem
+  // localStorage lesen zu lassen: der Aufrufer raeumt den localStorage sofort auf, und
+  // Interceptoren laufen erst im Promise-Durchlauf danach - der Aufruf ginge dann ohne
+  // Authorization-Header raus und wuerde den Token serverseitig nie entwerten.
+  logout: (token: string) =>
+    client.post<void>('/api/auth/logout', null, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };

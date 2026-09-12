@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { apiErrorMessage } from '../api/errors';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -24,9 +25,8 @@ export default function RegisterPage() {
     try {
       await register(email, password);
       navigate('/');
-    } catch (err: any) {
-      const errors = err.response?.data?.errors;
-      setError(errors ? errors.join(' ') : 'Registrierung fehlgeschlagen.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Registrierung fehlgeschlagen.'));
     } finally {
       setLoading(false);
     }

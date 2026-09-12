@@ -1,4 +1,23 @@
 import client from './client';
+import type { MealTypeName } from '../constants/mealTypes';
+
+// Spiegelt MealEndpoints.MaxQuantityInGrams: die API lehnt seit der letzten Aenderung alles
+// ausserhalb von (0, 10000] mit 400 ab. Der Wert steht hier neben den Requesttypen, weil er
+// Teil des Vertrags ist und nicht Teil einer einzelnen Seite.
+export const MAX_QUANTITY_IN_GRAMS = 10000;
+
+/**
+ * Prueft eine Menge gegen dieselbe Regel wie der Server und liefert die Meldung, oder null,
+ * wenn die Menge gueltig ist. Bewusst vor dem Request: sonst sieht der Nutzer erst nach dem
+ * Rundlauf, dass die Eingabe nie eine Chance hatte.
+ */
+export function quantityError(quantityInGrams: number): string | null {
+  if (!Number.isFinite(quantityInGrams) || quantityInGrams <= 0)
+    return 'Menge muss größer als 0 sein.';
+  if (quantityInGrams > MAX_QUANTITY_IN_GRAMS)
+    return `Menge darf höchstens ${MAX_QUANTITY_IN_GRAMS} g betragen.`;
+  return null;
+}
 
 export interface MealEntry {
   id: string;
@@ -63,7 +82,15 @@ export interface CreateMealRequest {
   iron?: number;
   potassium?: number;
   quantityInGrams: number;
-  mealType: string;
+  // Gesendet wird nur, was das Server-Enum kennt - alles andere quittiert die API mit 400.
+  mealType: MealTypeName;
+  date?: string;
+  time?: string;
+}
+
+export interface UpdateMealRequest {
+  quantityInGrams: number;
+  mealType: MealTypeName;
   date?: string;
   time?: string;
 }
@@ -77,6 +104,9 @@ export const mealsApi = {
 
   create: (data: CreateMealRequest) =>
     client.post<MealEntry>('/api/meals', data),
+
+  update: (id: string, data: UpdateMealRequest) =>
+    client.put<MealEntry>(`/api/meals/${id}`, data),
 
   delete: (id: string) =>
     client.delete(`/api/meals/${id}`),
