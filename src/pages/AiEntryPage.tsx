@@ -31,6 +31,22 @@ const caloriesFor = (item: ParsedItem, draft: Draft) => {
   return Math.round(nutrients.calories * draft.quantityInGrams / 100);
 };
 
+/**
+ * Kurzwort fuer die Herkunft der Naehrwerte. "geschaetzt" waere fuer ein Grundnahrungsmittel
+ * irrefuehrend: 89 kcal fuer eine Banane sind kein Schaetzwert, sondern der Standardwert. Wer
+ * nicht weiss, warum eine Zahl so ist, misstraut ihr - und traegt sie dann gar nicht erst ein.
+ */
+function herkunft(source: ParsedItem['source']): string {
+  switch (source) {
+    case 'openfoodfacts':
+      return 'Markenprodukt';
+    case 'generic':
+      return 'Standardwert';
+    default:
+      return 'geschätzt';
+  }
+}
+
 export default function AiEntryPage() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -264,7 +280,9 @@ export default function AiEntryPage() {
                     <td>
                       <div className="ai-item-label">
                         {item.candidates[draft.candidateIndex]?.name ?? item.label}
-                        {item.source === 'estimate' && <span className="ai-badge">geschätzt</span>}
+                        <span className={`ai-badge ai-badge-${item.source}`}>
+                          {herkunft(item.source)}
+                        </span>
                       </div>
                       {item.candidates.length > 1 && (
                         <select

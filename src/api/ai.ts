@@ -26,7 +26,15 @@ export interface ParsedItem {
   label: string;
   quantityInGrams: number;
   mealType: string;
-  source: 'openfoodfacts' | 'estimate';
+  /**
+   * Woher die Werte stammen:
+   *  openfoodfacts – Treffer in der Produktdatenbank, `candidates` ist gefuellt.
+   *  generic       – Standardwert fuer ein Grundnahrungsmittel oder ein selbst gekochtes
+   *                  Gericht. Kein Rueckfall, sondern die bessere Quelle: die Produktdatenbank
+   *                  kennt zu "Spaghetti" nur trockene Nudeln (360 statt 150 kcal je 100 g).
+   *  estimate      – Rueckfall: Markenprodukt gesucht, aber nichts gefunden.
+   */
+  source: 'openfoodfacts' | 'generic' | 'estimate';
   candidates: FoodItem[];
   estimate: NutrientEstimate | null;
 }

@@ -345,6 +345,21 @@ input:focus, select:focus { border-color: var(--accent); }
   font-weight: 500;
 }
 
+/* Die Herkunft wird ueber die Farbe unterschieden, nicht nur ueber das Wort: ein Markenprodukt
+   aus der Datenbank und ein Standardwert sind beide belastbar (gruen/blau), "geschaetzt" ist der
+   einzige Fall, in dem wirklich geraten wurde - und nur der bleibt warnend orange. */
+.ai-badge-openfoodfacts {
+  background: rgba(34,197,94,0.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ai-badge-generic {
+  background: rgba(59,130,246,0.12);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 .ai-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
 
 /* Responsive */
