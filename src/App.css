@@ -402,7 +402,11 @@ input:focus, select:focus { border-color: var(--accent); }
   align-items: flex-start;
   justify-content: center;
   padding: 4vh 1rem;
-  z-index: 50;
+  /* Muss ueber dem Kopf der Anwendung liegen (.header, z-index 100). Mit 50 lag der Kopf
+     darueber und verdeckte auf schmalen Schirmen die gesamte Kopfzeile des Overlays - samt
+     Schliessen-Knopf, der dort der einzige Ausweg ist (kein Escape, kein freier Hintergrund).
+     Ein Tipp auf das "x" traf stattdessen den Logout-Knopf dahinter. */
+  z-index: 200;
   overflow-y: auto;
 }
 
