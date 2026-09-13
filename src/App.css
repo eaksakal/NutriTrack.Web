@@ -122,16 +122,22 @@ a:hover { color: var(--accent-hover); }
 
 /* Forms */
 label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
-input, select {
+/* textarea gehoert hier dazu: ohne sie faellt ein mehrzeiliges Feld auf die Browser-Vorgabe
+   zurueck - weisser Grund, eigene Schrift, anderer Rahmen - und steht als einziges Element
+   sichtbar neben dem Rest der Oberflaeche. font: inherit, weil textarea sonst als einziges
+   Formularelement nicht die Schrift der Seite erbt, sondern monospace. */
+input, select, textarea {
   background: var(--bg-input);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 0.6rem 0.8rem;
   border-radius: var(--radius);
+  font-family: inherit;
   font-size: 0.95rem;
   outline: none;
 }
-input:focus, select:focus { border-color: var(--accent); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+::placeholder { color: var(--text-muted); opacity: 1; }
 
 /* Auf Geraeten, die mit dem Finger bedient werden, MUESSEN Eingabefelder mindestens 16px gross
    sein: Safari auf dem iPhone zoomt beim Hineintippen sonst von sich aus hinein und laesst die
@@ -155,6 +161,9 @@ input:focus, select:focus { border-color: var(--accent); }
   /* Geprueft, Stand dieser Aenderung: sonst setzt nur .date-nav input[type="date"] eine eigene
      Groesse (1.1rem = 17.6px) und liegt damit ohnehin ueber der Grenze. */
   select.ai-candidate { font-size: max(16px, 0.85rem); }
+  /* .ai-input textarea (0,1,1) schlaegt den Element-Selektor oben (0,0,1) - ohne diese Zeile
+     kaeme das Hineinzoomen ueber die Schriftgroesse der Composer-Regel zurueck. */
+  .ai-input textarea { font-size: max(16px, 0.95rem); }
 }
 
 /* Messages */
@@ -600,15 +609,46 @@ input:focus, select:focus { border-color: var(--accent); }
 .ai-message-assistant { align-self: flex-start; color: var(--text-muted); }
 
 /* Die Eingabe ist mehrzeilig: eine Mahlzeit sind oft mehrere Posten, und in einer einzeiligen
-   Zeile verschwindet der Anfang beim Tippen nach links. Der Knopf steht deshalb unten rechts. */
-.ai-input { display: flex; align-items: flex-end; gap: 0.75rem; margin-bottom: 1.5rem; }
-.ai-input textarea {
-  flex: 1;
-  min-height: 4.5rem;
-  resize: vertical;
-  font: inherit;
-  line-height: 1.4;
+   Zeile verschiebt sich der Anfang beim Tippen aus dem Blick.
+
+   Feld und Knopf sitzen in EINEM Rahmen statt nebeneinander in zweien: nebeneinander wirkte der
+   Knopf wie ein zweites, unabhaengiges Bedienelement, und bei einem hoehergezogenen Feld stand er
+   verloren daneben. Der Rahmen liegt deshalb aussen und der Fokus faerbt ihn ganz. */
+.ai-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.7rem 0.7rem 0.9rem;
+  margin-bottom: 1.5rem;
+  transition: border-color 0.15s ease;
 }
+/* :focus-within statt :focus am Feld: gefaerbt wird der Rahmen, und der gehoert dem Container. */
+.ai-input:focus-within { border-color: var(--accent); }
+.ai-input textarea {
+  /* Der Rahmen liegt aussen - ein zweiter, eigener waere ein Kasten im Kasten. */
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  width: 100%;
+  min-height: 4.5rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.ai-input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* Die Tastenbelegung sieht man einer Textarea nicht an - dort schreibt Enter sonst eine neue
+   Zeile, hier schickt es ab. */
+.ai-input-hint { font-size: 0.75rem; color: var(--text-muted); }
+.ai-input-actions .btn-primary { min-height: 38px; padding: 0.4rem 1.1rem; }
 
 .ai-notice {
   background: rgba(245,158,11,0.1);

@@ -262,9 +262,12 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
           }}
           disabled={loading}
         />
-        <button type="submit" className="btn-primary" disabled={loading || !input.trim()}>
-          {loading ? 'Sendet...' : 'Senden'}
-        </button>
+        <div className="ai-input-actions">
+          <span className="ai-input-hint">Enter sendet &middot; Shift+Enter neue Zeile</span>
+          <button type="submit" className="btn-primary" disabled={loading || !input.trim()}>
+            {loading ? 'Sendet...' : 'Senden'}
+          </button>
+        </div>
       </form>
 
       {items.length > 0 && (
