@@ -64,6 +64,10 @@ a:hover { color: var(--accent-hover); }
 .main { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
 
 /* Buttons */
+/* min-height: 44px - dieselbe Daumengrenze wie bei .icon-btn. Die Pfeile der Datumsnavigation
+   kamen ueber Schriftgroesse und Innenabstand nur auf rund 39px und wurden auf dem Handy
+   regelmaessig verfehlt. inline-flex, damit die Beschriftung in der hoeheren Flaeche mittig
+   sitzt statt oben zu kleben. */
 .btn-primary {
   background: var(--accent);
   color: white;
@@ -73,6 +77,10 @@ a:hover { color: var(--accent-hover); }
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 500;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -84,28 +92,33 @@ a:hover { color: var(--accent-hover); }
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.95rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-secondary:hover { border-color: var(--accent); }
-.btn-delete {
+
+/* Symbolknopf fuer Zeilenaktionen. 44px sind die kleinste Flaeche, die sich mit dem Daumen
+   zuverlaessig treffen laesst - darunter trifft man auf dem Handy regelmaessig den Nachbarn. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
   background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.3rem;
-  cursor: pointer;
-  padding: 0.2rem 0.5rem;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-}
-.btn-delete:hover { color: var(--red); background: rgba(239,68,68,0.1); }
-.btn-edit {
-  background: transparent;
-  border: none;
   color: var(--text-muted);
-  font-size: 0.85rem;
   cursor: pointer;
-  padding: 0.3rem 0.5rem;
-  border-radius: var(--radius);
 }
-.btn-edit:hover { color: var(--accent); background: rgba(99,102,241,0.1); }
+.icon-btn svg { width: 19px; height: 19px; }
+.icon-btn:hover { color: var(--accent); background: rgba(99,102,241,0.1); }
+.icon-btn.is-active { color: var(--accent); background: rgba(99,102,241,0.12); border-color: var(--accent); }
+.icon-btn-danger:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Forms */
 label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
@@ -119,6 +132,30 @@ input, select {
   outline: none;
 }
 input:focus, select:focus { border-color: var(--accent); }
+
+/* Auf Geraeten, die mit dem Finger bedient werden, MUESSEN Eingabefelder mindestens 16px gross
+   sein: Safari auf dem iPhone zoomt beim Hineintippen sonst von sich aus hinein und laesst die
+   Seite verschoben zurueck. Die 0.95rem oben sind 15.2px und loesen genau das aus.
+
+   Das Naheliegende - user-scalable=no im Viewport-Meta - waere hier der falsche Griff: Safari
+   ignoriert es seit iOS 10, das automatische Zoomen bliebe also. Es wuerde nur das ABSICHTLICHE
+   Zwei-Finger-Zoomen abschalten, und das nimmt man niemandem weg, der schlecht sieht.
+
+   (pointer: coarse) statt einer Breitengrenze, weil es an der Bedienung haengt und nicht am
+   Schirm: ein Tablet im Querformat ist breiter als 640px und zoomt trotzdem.
+
+   Die Untergrenze muss jede spezifischere Regel ueberstehen: eine Klassenregel (0,1,0) schlaegt
+   den Element-Selektor hier (0,0,1), und genau so kam das Zoomen ueber .ai-candidate mit
+   0.85rem = 13.6px zurueck. Deshalb steht fuer jedes Feld mit eigener Schriftgroesse unten
+   dieselbe max()-Grenze - mit hoeherer Spezifitaet als die Ausgangsregel, damit auch die
+   Quellreihenfolge nichts daran aendert. Kommt eine neue Regel fuer input/select/textarea
+   hinzu, gehoert sie hier ebenfalls abgesichert. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: max(16px, 0.95rem); }
+  /* Geprueft, Stand dieser Aenderung: sonst setzt nur .date-nav input[type="date"] eine eigene
+     Groesse (1.1rem = 17.6px) und liegt damit ohnehin ueber der Grenze. */
+  select.ai-candidate { font-size: max(16px, 0.85rem); }
+}
 
 /* Messages */
 .error-msg { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); padding: 0.6rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.9rem; }
@@ -148,6 +185,35 @@ input:focus, select:focus { border-color: var(--accent); }
 .auth-switch { margin-top: 1.2rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
 
 /* Dashboard */
+
+/* Die Umschaltung steht ueber der Datumsnavigation, weil sie deren Bedeutung aendert: derselbe
+   Pfeil blaettert je nach Reiter einen Tag, eine Woche oder einen Monat weiter. Die Form ist
+   bewusst dieselbe wie bei den Reitern im Eintragen-Overlay (.overlay-tab). */
+.view-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+.view-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.view-tab:hover { color: var(--text); }
+/* Der Text nimmt die hellere Akzentvariante: --accent auf dem dunklen Grund erreicht nur 3,8:1
+   und bleibt damit unter den 4,5:1, die Fliesstext braucht. Rahmen und Fuellung duerfen
+   --accent behalten - fuer Flaechen gilt die Schwelle nicht. */
+.view-tab.is-active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
 .date-nav {
   display: flex;
   align-items: center;
@@ -160,6 +226,26 @@ input:focus, select:focus { border-color: var(--accent); }
   font-weight: 600;
   text-align: center;
   min-width: 170px;
+}
+
+/* Masse wie beim Datumsfeld daneben: die Zeile darf beim Umschalten nicht springen. */
+.period-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 170px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid transparent;
+}
+
+/* Grund und Wiederholung gehoeren in dieselbe Zeile: der Knopf ist die Antwort auf die Meldung
+   daneben und darf nicht als eigenstaendige Aktion missverstanden werden. */
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .summary-cards {
@@ -195,6 +281,76 @@ input:focus, select:focus { border-color: var(--accent); }
 .goal-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; }
 .goal-hint { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
 
+/* Kein Kleingedrucktes: der Satz ist die Lesehilfe zu den Karten darueber. Wer nicht weiss, aus
+   wie vielen Tagen der Schnitt stammt, haelt einen Ausreisser fuer eine Bilanz. */
+.period-note {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Tagesstreifen ─────────────────────────────────────────────────────────── */
+
+.day-strip { margin-bottom: 1.5rem; }
+.day-strip h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+
+.day-strip-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  height: 120px;
+  padding: 0 0.1rem;
+}
+
+.day-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.day-bar:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+.day-bar-fill {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
+.day-bar:hover .day-bar-fill { background: var(--accent-hover); }
+
+/* Leere Tage als hohler Umriss ueber die volle Hoehe: ein niedriger Stummel waere von einem
+   sehr kleinen Tag nicht zu unterscheiden, und genau diese Luecken soll man sofort sehen. */
+.day-bar-gap .day-bar-fill {
+  height: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-bottom: none;
+}
+.day-bar-gap:hover .day-bar-fill { background: transparent; border-color: var(--accent); }
+
+.day-strip-labels { display: flex; gap: 0.25rem; margin-top: 0.4rem; }
+.day-strip-label {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.day-strip-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* Micronutrients */
 .micro-grid { margin-bottom: 1.5rem; }
 .micro-grid h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
@@ -223,18 +379,79 @@ input:focus, select:focus { border-color: var(--accent); }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.8rem 1rem;
+  padding: 0.4rem 0.5rem 0.4rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-bottom: 0.4rem;
 }
-.meal-item-info { flex: 1; }
+/* Beim Bearbeiten bleibt die Zeile stehen und bekommt nur den Akzentrahmen - so behaelt man den
+   Eintrag im Blick, den man gerade aendert. */
+.meal-item.is-editing { border-color: var(--accent); }
+
+.meal-item-main {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0;
+}
+/* Name, Marke und Menge duerfen die Zeile umbrechen, aber nie in sich selbst: "120" und "g"
+   oder eine Marke und ihre Klammer auf zwei Zeilen zu verteilen macht die Angabe unleserlich. */
+.meal-item-info { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.4rem; }
+.meal-item-info > * { white-space: nowrap; }
+.meal-name { font-weight: 500; min-width: 0; white-space: normal; }
 .meal-item-info .brand { color: var(--text-muted); font-size: 0.85rem; }
-.meal-qty { margin-left: 0.5rem; color: var(--text-muted); font-size: 0.85rem; }
-.meal-item-macros { display: flex; gap: 0.8rem; font-size: 0.85rem; color: var(--text-muted); }
-.meal-item-macros span:first-child { color: var(--orange); font-weight: 600; }
-.meal-item-actions { display: flex; align-items: center; gap: 0.2rem; }
+.meal-qty { color: var(--text-muted); font-size: 0.85rem; }
+.meal-item-macros {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.7rem;
+  row-gap: 0.1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.meal-item-macros span { white-space: nowrap; }
+.meal-item-macros span:first-child { color: var(--orange); }
+
+.meal-item-actions { display: flex; align-items: center; gap: 0.1rem; flex: none; }
+
+/* Die Rueckfrage ersetzt die beiden Symbolknoepfe an Ort und Stelle. Gleiche Mindesthoehe wie
+   ein Symbolknopf, damit die Zeile beim Aufklappen nicht springt. */
+.meal-item-confirm { gap: 0.4rem; flex-wrap: wrap; min-height: 44px; }
+.confirm-question { font-size: 0.85rem; color: var(--text); }
+.btn-confirm-delete,
+.btn-confirm-cancel {
+  min-height: 36px;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-confirm-delete {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.btn-confirm-delete:hover { background: rgba(239, 68, 68, 0.2); }
+.btn-confirm-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-confirm-cancel:hover { color: var(--text); border-color: var(--accent); }
+
+/* Das Formular haengt unter der Zeile, die es bearbeitet - volle Breite ueber den Umbruch der
+   Flexbox, damit es die Angaben darueber nicht zur Seite draengt. */
+.meal-item-edit {
+  flex: 1 0 100%;
+  border-top: 1px solid var(--border);
+  margin-top: 0.2rem;
+  padding: 0.8rem 0.5rem 0.4rem 0;
+}
+.meal-item-edit .nutrient-preview { flex-wrap: wrap; row-gap: 0.3rem; font-size: 0.85rem; }
 
 /* Goals Page */
 .goals-page h1 { font-size: 1.3rem; margin-bottom: 1rem; }
@@ -368,7 +585,25 @@ input:focus, select:focus { border-color: var(--accent); }
   .header-inner { font-size: 0.85rem; }
   .nav { gap: 0.75rem; }
   .user-email { display: none; }
-  .meal-item { flex-direction: column; align-items: flex-start; }
+  /* Die Zeile bleibt auch hier zweispaltig: die Aktionen unter den Eintrag zu schieben macht
+     die Liste doppelt so hoch und die Zuordnung Knopf/Eintrag unklar. */
+  .meal-item { padding-left: 0.7rem; }
+  .meal-item-main { flex-basis: 8rem; }
+
+  /* Bei 360px passen Pfeile, Datumsfeld und "+" nicht mehr nebeneinander: das Datumsfeld darf
+     schrumpfen (min-width: 0 hebt die 170px auf) und die Zeile notfalls umbrechen, statt den
+     "+"-Knopf aus dem Bild zu druecken. */
+  .date-nav { gap: 0.5rem; flex-wrap: wrap; }
+  .date-nav input[type="date"],
+  .period-label { min-width: 0; flex: 1 1 auto; }
+
+  /* 31 Balken auf 360px waeren je 6px breit und mit dem Finger nicht zu treffen. Lieber eine
+     antippbare Mindestbreite und den Streifen selbst waagerecht scrollen lassen - overflow-x
+     sitzt auf dem Streifen, der Seitenkoerper bleibt davon unberuehrt. In der Wochenansicht
+     passen sieben Balken weiterhin ohne Scrollen hin, die Wochentagsbuchstaben darunter
+     bleiben also in Deckung. */
+  .day-strip-bars { height: 96px; overflow-x: auto; }
+  .day-bar { min-width: 24px; }
   .ai-message { max-width: 100%; }
   .ai-table { font-size: 0.82rem; }
   .ai-table input[type="number"] { width: 64px; }
@@ -380,6 +615,8 @@ input:focus, select:focus { border-color: var(--accent); }
 
 .btn-add {
   margin-left: auto;
+  /* Ohne flex: none schrumpft der runde Knopf in der engen Datumszeile und wird oval. */
+  flex: none;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -404,8 +641,9 @@ input:focus, select:focus { border-color: var(--accent); }
   padding: 4vh 1rem;
   /* Muss ueber dem Kopf der Anwendung liegen (.header, z-index 100). Mit 50 lag der Kopf
      darueber und verdeckte auf schmalen Schirmen die gesamte Kopfzeile des Overlays - samt
-     Schliessen-Knopf, der dort der einzige Ausweg ist (kein Escape, kein freier Hintergrund).
-     Ein Tipp auf das "x" traf stattdessen den Logout-Knopf dahinter. */
+     Schliessen-Knopf. Ein Tipp auf das "x" traf stattdessen den Logout-Knopf dahinter.
+     Escape und ein Klick auf den Hintergrund schliessen zwar ebenfalls, auf dem Handy gibt es
+     aber beides nicht: dort ist das "x" (44x44, siehe .overlay-close) der einzige Ausweg. */
   z-index: 200;
   overflow-y: auto;
 }
@@ -441,10 +679,11 @@ input:focus, select:focus { border-color: var(--accent); }
 
 .overlay-tab:hover { color: var(--text); }
 
+/* Hellere Akzentvariante fuer den Text, gleicher Grund wie bei .view-tab.is-active. */
 .overlay-tab.is-active {
   background: rgba(99, 102, 241, 0.12);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-hover);
 }
 
 /* Der Tag, auf den gebucht wird. Steht bewusst im Kopf und nicht kleingedruckt irgendwo:
@@ -454,6 +693,8 @@ input:focus, select:focus { border-color: var(--accent); }
   font-size: 0.85rem;
 }
 
+/* 44x44 wie .icon-btn: das Zeichen selbst ist nur rund 24x20px gross, und ein Knopf, der auf
+   dem Handy der einzige Ausweg aus dem Overlay ist, darf nicht der kleinste der Seite sein. */
 .overlay-close {
   margin-left: auto;
   background: transparent;
@@ -462,7 +703,12 @@ input:focus, select:focus { border-color: var(--accent); }
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0 0.25rem;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .overlay-close:hover { color: var(--text); }

@@ -63,6 +63,45 @@ export interface DailySummary {
   entries: MealEntry[];
 }
 
+// Der Zeitraum liefert Durchschnitte je Tag, keine Summen: nur so sind eine Woche und ein Monat
+// ueberhaupt miteinander und mit dem Tagesziel vergleichbar.
+export interface PeriodAverages {
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+  fiber: number;
+  sugar: number;
+  saturatedFat: number;
+  sodium: number;
+  vitaminA: number;
+  vitaminC: number;
+  vitaminD: number;
+  calcium: number;
+  iron: number;
+  potassium: number;
+}
+
+export interface PeriodDay {
+  date: string;
+  totalEntries: number;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbohydrates: number;
+  totalFat: number;
+}
+
+export interface PeriodSummary {
+  from: string;
+  to: string;
+  daysInPeriod: number;
+  // Nenner des Durchschnitts. Ohne diese Zahl waere ein Schnitt aus zwei erfassten Tagen von
+  // einem aus dreissig nicht zu unterscheiden.
+  daysWithEntries: number;
+  averages: PeriodAverages;
+  days: PeriodDay[];
+}
+
 export interface CreateMealRequest {
   foodName: string;
   brand?: string;
@@ -101,6 +140,10 @@ export const mealsApi = {
 
   getSummary: (date: string) =>
     client.get<DailySummary>('/api/meals/summary', { params: { date } }),
+
+  // from/to sind einschliesslich, beides lokale Datumsangaben im Format YYYY-MM-DD.
+  getPeriod: (from: string, to: string) =>
+    client.get<PeriodSummary>('/api/meals/period', { params: { from, to } }),
 
   create: (data: CreateMealRequest) =>
     client.post<MealEntry>('/api/meals', data),
