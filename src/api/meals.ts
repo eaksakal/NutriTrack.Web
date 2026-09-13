@@ -127,6 +127,20 @@ export interface CreateMealRequest {
   time?: string;
 }
 
+/**
+ * Traegt einen bestehenden Eintrag ein zweites Mal ein. Alle Felder sind optional: ohne Angabe
+ * gelten Menge und Mahlzeit des Originals, Datum und Uhrzeit werden zu "jetzt".
+ *
+ * Bewusst nicht ueber create(): dort waeren die Naehrwerte je 100 g noetig, die das Frontend
+ * gar nicht hat - MealEntry liefert nur die auf die Menge hochgerechneten Werte.
+ */
+export interface RepeatMealRequest {
+  quantityInGrams?: number;
+  mealType?: MealTypeName;
+  date?: string;
+  time?: string;
+}
+
 export interface UpdateMealRequest {
   quantityInGrams: number;
   mealType: MealTypeName;
@@ -147,6 +161,13 @@ export const mealsApi = {
 
   create: (data: CreateMealRequest) =>
     client.post<MealEntry>('/api/meals', data),
+
+  // Je Lebensmittel der juengste Eintrag, als Vorlage zum Wiedereintragen.
+  getRecent: (limit?: number) =>
+    client.get<MealEntry[]>('/api/meals/recent', { params: limit ? { limit } : undefined }),
+
+  repeat: (id: string, data: RepeatMealRequest = {}) =>
+    client.post<MealEntry>(`/api/meals/${id}/repeat`, data),
 
   update: (id: string, data: UpdateMealRequest) =>
     client.put<MealEntry>(`/api/meals/${id}`, data),

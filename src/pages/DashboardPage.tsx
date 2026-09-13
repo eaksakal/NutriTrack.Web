@@ -130,6 +130,11 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [loadError, setLoadError] = useState('');
+  // Zugeklappt ist der Normalfall: die Liste zeigt zuerst nur die Kategorien mit ihren Summen.
+  const [openMealTypes, setOpenMealTypes] = useState<MealTypeName[]>([]);
+  // Eintrag, fuer den gerade die Mahlzeit des Wiedereintrags gewaehlt wird.
+  const [repeatingId, setRepeatingId] = useState<string | null>(null);
+  const [repeating, setRepeating] = useState(false);
 
   const { from, to } = useMemo(() => periodRange(date, mode), [date, mode]);
 
@@ -218,11 +223,54 @@ export default function DashboardPage() {
     loadSummary(false);
   };
 
+  const toggleMealType = (type: MealTypeName) => {
+    setOpenMealTypes(prev => {
+      if (!prev.includes(type)) return [...prev, type];
+      // Ein Formular oder eine Loeschabfrage, die beim Zuklappen offen bleibt, waere beim
+      // naechsten Aufklappen ein halb fertiger Zustand ohne erkennbaren Ausloeser.
+      setEditingId(null);
+      setEditError('');
+      setConfirmingId(null);
+      setRepeatingId(null);
+      return prev.filter(t => t !== type);
+    });
+  };
+
+  /**
+   * Traegt denselben Posten ein zweites Mal ein - der zweite Kaffee des Tages, ggf. auf einer
+   * anderen Mahlzeit. Der Server legt dabei einen EIGENEN Eintrag an und verdoppelt nicht die
+   * Menge des ersten: sonst ginge die Uhrzeit verloren und ein Loeschen traefe beide.
+   */
+  const handleRepeat = async (entry: MealEntry, type: MealTypeName) => {
+    setRepeating(true);
+    setLoadError('');
+    try {
+      await mealsApi.repeat(entry.id, { mealType: type, date });
+      setRepeatingId(null);
+      // Die Zielmahlzeit aufklappen: sonst quittiert die Seite den Klick nur mit einer stillen
+      // Aenderung in einer zugeklappten Kategorie.
+      setOpenMealTypes(prev => (prev.includes(type) ? prev : [...prev, type]));
+      await loadSummary(false);
+    } catch (err) {
+      setLoadError(apiErrorMessage(err, 'Der Eintrag liess sich nicht wiederholen.'));
+    } finally {
+      setRepeating(false);
+    }
+  };
+
+  const startRepeat = (entry: MealEntry) => {
+    // Wie beim Bearbeiten: zwei offene Masken in derselben Zeile waeren zweideutig.
+    setRepeatingId(entry.id);
+    setConfirmingId(null);
+    setEditingId(null);
+  };
+
   const startEdit = (entry: MealEntry) => {
     setEditingId(entry.id);
     // Eine halb ausgeklappte Loeschabfrage neben dem geoeffneten Formular stehen zu lassen,
     // waere zweideutig: beide Aktionen beanspruchen dieselbe Zeile.
     setConfirmingId(null);
+    setRepeatingId(null);
     setEditQuantity(entry.quantityInGrams);
     // Der Server liefert einen Enum-Namen; kennt das Select ihn nicht, bliebe das Feld leer und
     // das Speichern schickte einen Wert, den die mealType-Pruefung der API ablehnt.
@@ -354,10 +402,10 @@ export default function DashboardPage() {
           onSaved={() => {
             setOverlayOffen(false);
             loadSummary(false);
-            // Im Reiter "Ziele" speichert dasselbe Overlay neue Tagesziele. Ohne das Nachladen
-            // liefen die Fortschrittsbalken weiter gegen die alten Werte.
-            loadGoals();
           }}
+          // Aus der Vorschlagsliste laesst sich mehreres nacheinander eintragen: nur nachladen,
+          // nicht schliessen.
+          onAdded={() => loadSummary(false)}
         />
       )}
 
@@ -427,10 +475,37 @@ export default function DashboardPage() {
             {MEAL_TYPES.map(type => {
               const meals = summary.entries.filter(e => e.mealType === type);
               if (meals.length === 0) return null;
+              const offen = openMealTypes.includes(type);
+              const gesamt = meals.reduce(
+                (acc, e) => ({
+                  calories: acc.calories + e.calories,
+                  protein: acc.protein + e.protein,
+                  carbohydrates: acc.carbohydrates + e.carbohydrates,
+                  fat: acc.fat + e.fat,
+                }),
+                { calories: 0, protein: 0, carbohydrates: 0, fat: 0 },
+              );
               return (
-                <div key={type} className="meal-group">
-                  <h3>{mealTypeLabel(type)}</h3>
-                  {meals.map(entry => (
+                <div key={type} className={offen ? 'meal-group is-open' : 'meal-group'}>
+                  <h3>
+                    <button
+                      type="button"
+                      className="meal-group-toggle"
+                      aria-expanded={offen}
+                      onClick={() => toggleMealType(type)}
+                    >
+                      <ChevronIcon />
+                      <span className="meal-group-name">{mealTypeLabel(type)}</span>
+                      <span className="meal-group-count">{meals.length}</span>
+                      <span className="meal-group-macros">
+                        <span>{Math.round(gesamt.calories)} kcal</span>
+                        <span>P: {Math.round(gesamt.protein)}g</span>
+                        <span>K: {Math.round(gesamt.carbohydrates)}g</span>
+                        <span>F: {Math.round(gesamt.fat)}g</span>
+                      </span>
+                    </button>
+                  </h3>
+                  {offen && meals.map(entry => (
                     <div
                       key={entry.id}
                       className={editingId === entry.id ? 'meal-item is-editing' : 'meal-item'}
@@ -449,7 +524,32 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {confirmingId === entry.id ? (
+                      {repeatingId === entry.id ? (
+                        // Die Mahlzeit wird gefragt, statt sie zu erben: wiederholt wird meist
+                        // etwas, das man zu einer anderen Tageszeit noch einmal isst.
+                        <div className="meal-item-actions meal-item-repeat">
+                          <span className="confirm-question">Nochmal auf:</span>
+                          {MEAL_TYPES.map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              className="btn-repeat-target"
+                              disabled={repeating}
+                              onClick={() => handleRepeat(entry, t)}
+                            >
+                              {mealTypeLabel(t)}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="btn-confirm-cancel"
+                            disabled={repeating}
+                            onClick={() => setRepeatingId(null)}
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      ) : confirmingId === entry.id ? (
                         // Die Rueckfrage bleibt in der Zeile, die sie betrifft. window.confirm
                         // haette den Bezug zum Eintrag verloren und blockiert nebenbei alles.
                         <div className="meal-item-actions meal-item-confirm">
@@ -471,6 +571,15 @@ export default function DashboardPage() {
                         </div>
                       ) : (
                         <div className="meal-item-actions">
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            aria-label={`${entry.foodName} nochmal eintragen`}
+                            title="Nochmal eintragen"
+                            onClick={() => startRepeat(entry)}
+                          >
+                            <PlusIcon />
+                          </button>
                           <button
                             type="button"
                             className={editingId === entry.id ? 'icon-btn is-active' : 'icon-btn'}
@@ -728,6 +837,23 @@ function DayStrip({
 // Inline statt aus public/icons.svg: das dortige Sprite enthaelt ausschliesslich Marken- und
 // Social-Symbole, keine Werkzeugsymbole. Inline erbt das Icon ausserdem die Farbe des Knopfes
 // (currentColor) und braucht keinen zweiten Request.
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
 function PencilIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -1,15 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import AiEntryPage from '../pages/AiEntryPage';
-import SearchPage from '../pages/SearchPage';
-import GoalsPage from '../pages/GoalsPage';
-
-type Tab = 'text' | 'search' | 'goals';
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'text', label: 'Per Text' },
-  { id: 'search', label: 'Suche' },
-  { id: 'goals', label: 'Ziele' },
-];
+import RecentMeals from './RecentMeals';
 
 interface Props {
   /** Tag, auf den neue Einträge gebucht werden — der, den das Dashboard gerade zeigt. */
@@ -17,6 +8,8 @@ interface Props {
   onClose: () => void;
   /** Nach erfolgreichem Eintragen: schließen und die Tagesliste neu laden. */
   onSaved: () => void;
+  /** Nach einem Wiedereintrag aus der Vorschlagsliste: nur nachladen, Overlay bleibt offen. */
+  onAdded: () => void;
 }
 
 /** "Freitag, 12.09." — der Tag steht im Kopf, weil man sonst still auf den falschen bucht. */
@@ -38,9 +31,7 @@ function tagText(iso: string): string {
   })}`;
 }
 
-export default function EntryOverlay({ date, onClose, onSaved }: Props) {
-  const [tab, setTab] = useState<Tab>('text');
-
+export default function EntryOverlay({ date, onClose, onSaved, onAdded }: Props) {
   // Escape schliesst. Ohne das bliebe auf der Tastatur nur der Mausweg zum X - und ein Overlay,
   // aus dem man nicht mit Escape herauskommt, fuehlt sich kaputt an.
   useEffect(() => {
@@ -74,20 +65,8 @@ export default function EntryOverlay({ date, onClose, onSaved }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="overlay-head">
-          <div className="overlay-tabs">
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                className={`overlay-tab${tab === id ? ' is-active' : ''}`}
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <span className="overlay-date">{tab === 'goals' ? '' : tagText(date)}</span>
+          <h2 className="overlay-title">Eintragen</h2>
+          <span className="overlay-date">{tagText(date)}</span>
 
           <button type="button" className="overlay-close" onClick={onClose} aria-label="Schließen">
             ×
@@ -95,9 +74,8 @@ export default function EntryOverlay({ date, onClose, onSaved }: Props) {
         </div>
 
         <div className="overlay-body">
-          {tab === 'text' && <AiEntryPage embedded date={date} onDone={onSaved} />}
-          {tab === 'search' && <SearchPage embedded date={date} onDone={onSaved} />}
-          {tab === 'goals' && <GoalsPage embedded onDone={onSaved} />}
+          <RecentMeals date={date} onAdded={onAdded} />
+          <AiEntryPage embedded date={date} onDone={onSaved} />
         </div>
       </div>
     </div>

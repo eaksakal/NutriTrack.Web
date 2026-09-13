@@ -188,7 +188,7 @@ input:focus, select:focus { border-color: var(--accent); }
 
 /* Die Umschaltung steht ueber der Datumsnavigation, weil sie deren Bedeutung aendert: derselbe
    Pfeil blaettert je nach Reiter einen Tag, eine Woche oder einen Monat weiter. Die Form ist
-   bewusst dieselbe wie bei den Reitern im Eintragen-Overlay (.overlay-tab). */
+   bewusst dieselbe wie bei den Reitern der Suche. */
 .view-tabs {
   display: flex;
   justify-content: center;
@@ -373,8 +373,60 @@ input:focus, select:focus { border-color: var(--accent); }
 
 /* Meals List */
 .meals-list h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
-.meal-group { margin-bottom: 1rem; }
-.meal-group h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.meal-group { margin-bottom: 0.4rem; }
+.meal-group.is-open { margin-bottom: 1rem; }
+.meal-group h3 { font-size: 0.9rem; margin: 0; }
+
+/* Die Kategoriezeile ist der Schalter: zugeklappt steht dort die Summe der Mahlzeit, erst beim
+   Aufklappen kommen die einzelnen Eintraege darunter. */
+.meal-group-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.meal-group-toggle:hover { border-color: var(--accent); }
+.meal-group.is-open .meal-group-toggle { margin-bottom: 0.4rem; }
+.meal-group-toggle .chevron {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.meal-group.is-open .meal-group-toggle .chevron { transform: rotate(90deg); }
+.meal-group-name { text-transform: uppercase; letter-spacing: 0.05em; }
+.meal-group-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  flex: none;
+}
+/* Schiebt die Summen nach rechts und laesst sie auf schmalen Displays in die naechste Zeile. */
+.meal-group-macros {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.7rem;
+  row-gap: 0.1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.meal-group-macros span { white-space: nowrap; }
+.meal-group-macros span:first-child { color: var(--orange); }
 .meal-item {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -443,6 +495,43 @@ input:focus, select:focus { border-color: var(--accent); }
 }
 .btn-confirm-cancel:hover { color: var(--text); border-color: var(--accent); }
 
+/* Die Mahlzeitwahl beim Wiedereintragen steht an derselben Stelle wie die Loeschabfrage und
+   folgt derselben Form - es ist dieselbe Art von Zwischenfrage in derselben Zeile. */
+.meal-item-repeat { gap: 0.4rem; flex-wrap: wrap; min-height: 44px; }
+.btn-repeat-target {
+  min-height: 36px;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent-hover);
+}
+.btn-repeat-target:hover { background: rgba(99, 102, 241, 0.22); }
+.btn-repeat-target:disabled { opacity: 0.6; cursor: default; }
+
+/* Zuletzt gegessen (Overlay) */
+.recent-meals { margin-bottom: 1.5rem; }
+.recent-meals h2 { font-size: 1rem; margin-bottom: 0.6rem; }
+.recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.recent-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.4rem 0.3rem 0.8rem;
+}
+/* Der Name nimmt den Rest der Zeile und darf umbrechen; alles rechts davon behaelt seine Breite. */
+.recent-name { flex: 1 1 10rem; min-width: 0; font-weight: 500; }
+.recent-name .brand { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
+.recent-meta { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+.recent-target { font-size: 0.85rem; padding: 0.25rem 0.4rem; }
+.recent-done { color: var(--green); font-size: 0.8rem; white-space: nowrap; }
+
 /* Das Formular haengt unter der Zeile, die es bearbeitet - volle Breite ueber den Umbruch der
    Flexbox, damit es die Angaben darueber nicht zur Seite draengt. */
 .meal-item-edit {
@@ -510,8 +599,16 @@ input:focus, select:focus { border-color: var(--accent); }
 .ai-message-user { align-self: flex-end; border-color: var(--accent); }
 .ai-message-assistant { align-self: flex-start; color: var(--text-muted); }
 
-.ai-input { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
-.ai-input input { flex: 1; }
+/* Die Eingabe ist mehrzeilig: eine Mahlzeit sind oft mehrere Posten, und in einer einzeiligen
+   Zeile verschwindet der Anfang beim Tippen nach links. Der Knopf steht deshalb unten rechts. */
+.ai-input { display: flex; align-items: flex-end; gap: 0.75rem; margin-bottom: 1.5rem; }
+.ai-input textarea {
+  flex: 1;
+  min-height: 4.5rem;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.4;
+}
 
 .ai-notice {
   background: rgba(245,158,11,0.1);
@@ -665,26 +762,7 @@ input:focus, select:focus { border-color: var(--accent); }
   flex-wrap: wrap;
 }
 
-.overlay-tabs { display: flex; gap: 0.25rem; }
-
-.overlay-tab {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  padding: 0.35rem 0.8rem;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.overlay-tab:hover { color: var(--text); }
-
-/* Hellere Akzentvariante fuer den Text, gleicher Grund wie bei .view-tab.is-active. */
-.overlay-tab.is-active {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: var(--accent);
-  color: var(--accent-hover);
-}
+.overlay-title { font-size: 1rem; margin: 0; }
 
 /* Der Tag, auf den gebucht wird. Steht bewusst im Kopf und nicht kleingedruckt irgendwo:
    auf den falschen Tag zu buchen faellt sonst erst Tage spaeter auf. */

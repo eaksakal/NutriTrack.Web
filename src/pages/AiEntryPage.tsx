@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { aiApi, MAX_MESSAGES, type ChatMessage, type NutrientEstimate, type ParsedItem } from '../api/ai';
 import type { PanelProps } from '../components/PanelProps';
@@ -59,7 +59,7 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const send = async (e: FormEvent) => {
+  const send = async (e: SyntheticEvent) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
@@ -245,12 +245,21 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
       {notice && <div className="ai-notice">{notice}</div>}
 
       <form onSubmit={send} className="ai-input">
-        <input
-          type="text"
+        <textarea
           value={input}
+          rows={3}
           maxLength={MAX_MESSAGE_LENGTH}
           placeholder="Was hast du gegessen?"
           onChange={e => setInput(e.target.value)}
+          // Enter schickt ab, Shift+Enter setzt eine neue Zeile. In einer Textarea loeste Enter
+          // sonst gar nichts aus - das Feld soll mehrere Zeilen fassen, ohne dass man fuer jede
+          // Eingabe zur Maus greifen muss.
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send(e);
+            }
+          }}
           disabled={loading}
         />
         <button type="submit" className="btn-primary" disabled={loading || !input.trim()}>
