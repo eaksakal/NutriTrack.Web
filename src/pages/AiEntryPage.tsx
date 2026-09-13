@@ -70,6 +70,10 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
     // derselben Meldung. Der aelteste Teil des Gespraechs ist der entbehrlichste.
     const asked: ChatMessage = { role: 'user', text };
     const history: ChatMessage[] = [...messages, asked].slice(-MAX_MESSAGES);
+
+    // Der letzte bestaetigte Stand, fuer den Fall, dass es schiefgeht.
+    const bestaetigt = messages;
+
     setMessages(history);
     setInput('');
     setError('');
@@ -98,6 +102,13 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
         })));
       }
     } catch (err) {
+      // Eine gescheiterte Runde zaehlt nicht zum Gespraech. Blieb sie im Faden stehen, gab es
+      // keinen Weg zurueck: "Neues Gespraech" warf alles weg, und wer stattdessen dasselbe noch
+      // einmal tippte, hatte es danach zweimal drin - die KI las "2 Broetchen" doppelt und
+      // machte vier daraus. Der Text geht dorthin zurueck, wo er herkam; der zweite Versuch ist
+      // dann ein Druck auf Enter und schickt exakt denselben Faden wie der erste.
+      setMessages(bestaetigt);
+      setInput(text);
       setError(apiErrorMessage(err, 'Die KI-Erfassung hat nicht geklappt.'));
     } finally {
       setLoading(false);

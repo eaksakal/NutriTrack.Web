@@ -9,6 +9,7 @@ import { isAxiosError } from 'axios';
 interface ApiErrorBody {
   error?: unknown;
   errors?: unknown;
+  detail?: unknown;
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -29,6 +30,14 @@ function collectMessages(errors: unknown): string[] {
   return [];
 }
 
+// Der technische Grund, den die API in `detail` mitschickt (Zeitdeckel, HTTP-Status von Google,
+// fehlender Schluessel). Er haengt an der freundlichen Meldung statt sie zu ersetzen: die eine
+// sagt, was jetzt zu tun ist, der andere, warum es nicht ging. Ohne ihn sehen ein abgelaufener
+// Schluessel und ein zu langsamer Dienst gleich aus - und man wartet auf etwas, das nie kommt.
+function withDetail(message: string, detail: unknown): string {
+  return isNonEmptyString(detail) && !message.includes(detail) ? `${message} (${detail})` : message;
+}
+
 /**
  * Liest die Fehlermeldung aus einer API-Antwort; `fallback` greift bei Netzwerkfehlern,
  * 500ern und leeren Antworten (z. B. dem 401 des Login-Endpunkts, der keinen Body hat).
@@ -36,11 +45,15 @@ function collectMessages(errors: unknown): string[] {
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (!isAxiosError<ApiErrorBody>(err)) return fallback;
 
-  const data = err.response?.data;
-  if (!data || typeof data !== 'object') return fallback;
+  // Gar keine Antwort: die API selbst schweigt. Dann ist axios' eigene Diagnose alles, was es
+  // gibt - "Network Error" gegen "timeout of 30000ms exceeded" trennt Dienst-aus von Dienst-lahm.
+  if (!err.response) return withDetail(fallback, err.code ? `${err.code}: ${err.message}` : err.message);
 
-  if (isNonEmptyString(data.error)) return data.error;
+  const data = err.response.data;
+  if (!data || typeof data !== 'object') return withDetail(fallback, `HTTP ${err.response.status}`);
+
+  if (isNonEmptyString(data.error)) return withDetail(data.error, data.detail);
 
   const messages = collectMessages(data.errors);
-  return messages.length > 0 ? messages.join(' ') : fallback;
+  return messages.length > 0 ? messages.join(' ') : withDetail(fallback, data.detail);
 }
