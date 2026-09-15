@@ -43,6 +43,8 @@ function herkunft(source: ParsedItem['source']): string {
       return 'Markenprodukt';
     case 'generic':
       return 'Standardwert';
+    case 'history':
+      return 'aus deinem Verlauf';
     default:
       return 'geschätzt';
   }
@@ -155,6 +157,23 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
     const saved: number[] = [];
 
     for (const { item, draft, index } of chosen) {
+      // Ein Posten aus dem Verlauf geht ueber repeat: dort wird dieselbe FoodItemId
+      // weiterverwendet. Ueber create entstuende aus denselben Naehrwerten ein zweiter,
+      // rundungsbedingt leicht abweichender FoodItem.
+      if (item.source === 'history' && item.sourceEntryId) {
+        try {
+          await mealsApi.repeat(item.sourceEntryId, {
+            quantityInGrams: draft.quantityInGrams,
+            mealType: draft.mealType,
+            date,
+          });
+          saved.push(index);
+        } catch {
+          failed.push(item.label);
+        }
+        continue;
+      }
+
       const source = item.candidates[draft.candidateIndex] ?? null;
       const nutrients = source ?? item.estimate;
       if (!nutrients) {
@@ -313,7 +332,7 @@ export default function AiEntryPage({ date, onDone, embedded }: PanelProps) {
                       <div className="ai-item-label">
                         {item.candidates[draft.candidateIndex]?.name ?? item.label}
                         <span className={`ai-badge ai-badge-${item.source}`}>
-                          {herkunft(item.source)}
+                          {herkunft(item.source)}{item.sourceHint ? `: ${item.sourceHint}` : ''}
                         </span>
                       </div>
                       {item.candidates.length > 1 && (

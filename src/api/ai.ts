@@ -33,10 +33,16 @@ export interface ParsedItem {
    *                  Gericht. Kein Rueckfall, sondern die bessere Quelle: die Produktdatenbank
    *                  kennt zu "Spaghetti" nur trockene Nudeln (360 statt 150 kcal je 100 g).
    *  estimate      – Rueckfall: Markenprodukt gesucht, aber nichts gefunden.
+   *  history       – Bezug auf einen eigenen frueheren Eintrag. Die Werte kommen aus dem
+   *                  Tagebuch, nicht vom Modell; eingetragen wird ueber den repeat-Endpunkt.
    */
-  source: 'openfoodfacts' | 'generic' | 'estimate';
+  source: 'openfoodfacts' | 'generic' | 'estimate' | 'history';
   candidates: FoodItem[];
   estimate: NutrientEstimate | null;
+  /** Gesetzt genau dann, wenn `source === 'history'`: der Eintrag, der wiederholt wird. */
+  sourceEntryId: string | null;
+  /** Der Zeitpunkt des Originals in Worten, z. B. "gestern 21:30". */
+  sourceHint: string | null;
 }
 
 export interface ParseMealResponse {
