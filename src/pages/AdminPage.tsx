@@ -10,7 +10,9 @@ export default function AdminPage() {
   const [maxOutputTokens, setMaxOutputTokens] = useState('');
   const [probe, setProbe] = useState<AiProbeResult | null>(null);
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  // Welche der beiden Aktionen laeuft - nicht nur OB eine laeuft. Ein einzelnes Bool haette beide
+  // Knoepfe gesperrt, aber niemandem gesagt, ob gerade gespeichert oder getestet wird.
+  const [busy, setBusy] = useState<'speichern' | 'testen' | null>(null);
 
   // Nur die Felder vorbelegen, die WIRKLICH gespeichert sind. Stuende der Wert aus der Umgebung
   // im Feld, machte das erste Speichern ihn unbemerkt zu einem gespeicherten - und die Notbremse
@@ -29,36 +31,49 @@ export default function AdminPage() {
 
   const speichern = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError('');
+
+    // Number('') ergibt 0 (unproblematisch, da leer -> undefined weiter unten), Number('abc')
+    // NaN - und JSON.stringify macht aus NaN ein ausdrueckliches null statt das Feld wegzulassen.
+    // Also vor dem Senden pruefen, nicht dem Backend die Reparatur ueberlassen.
+    const maxOutputTokensTrimmed = maxOutputTokens.trim();
+    const maxOutputTokensValue = maxOutputTokensTrimmed ? Number(maxOutputTokensTrimmed) : undefined;
+    if (maxOutputTokensValue !== undefined && !Number.isFinite(maxOutputTokensValue)) {
+      setError('Ausgabe-Token muss eine Zahl sein.');
+      return;
+    }
+
+    setBusy('speichern');
     try {
       const res = await adminApi.updateSettings({
         model: model.trim() || undefined,
         thinkingLevel: thinkingLevel.trim() || undefined,
-        maxOutputTokens: maxOutputTokens.trim() ? Number(maxOutputTokens) : undefined,
+        maxOutputTokens: maxOutputTokensValue,
       });
       uebernehmen(res.data);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Einstellungen nicht ladbar.'));
+      setError(apiErrorMessage(err, 'Speichern fehlgeschlagen.'));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const testen = async () => {
-    setBusy(true);
+    setBusy('testen');
     setError('');
     setProbe(null);
     try {
       const res = await adminApi.probe();
       setProbe(res.data);
-      const aktuell = await adminApi.getFailures();
-      setFailures(aktuell.data);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Einstellungen nicht ladbar.'));
+      setError(apiErrorMessage(err, 'Verbindungstest fehlgeschlagen.'));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
+    // Eigenes .catch(): scheitert nur das Nachladen der Liste, obwohl die Probe lief, soll das
+    // nicht als Fehler ueber einem funktionierenden Ergebnis auftauchen (Nebensache wie beim
+    // ersten Laden oben).
+    adminApi.getFailures().then(res => setFailures(res.data)).catch(() => { /* Nebensache */ });
   };
 
   const herkunft = (ausDatenbank: boolean, wert: string | number) =>
@@ -105,8 +120,12 @@ export default function AdminPage() {
           </p>
 
           <div className="admin-actions">
-            <button type="submit" disabled={busy}>Speichern</button>
-            <button type="button" onClick={testen} disabled={busy}>Verbindung testen</button>
+            <button type="submit" className="btn-primary" disabled={busy !== null}>
+              {busy === 'speichern' ? 'Wird gespeichert...' : 'Speichern'}
+            </button>
+            <button type="button" className="btn-secondary" onClick={testen} disabled={busy !== null}>
+              {busy === 'testen' ? 'Testet…' : 'Verbindung testen'}
+            </button>
           </div>
         </form>
       )}
