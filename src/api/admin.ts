@@ -3,8 +3,12 @@ import client from './client';
 // Zu jedem Wert seine Herkunft: "aus der Datenbank" heisst, er ueberschreibt die
 // Umgebungsvariable. Ohne diese Unterscheidung raetselt man, warum ein Eintrag nicht wirkt.
 export interface AiSettings {
+  provider: 'gemini' | 'openrouter';
+  providerFromDatabase: boolean;
   model: string;
   modelFromDatabase: boolean;
+  openRouterModel: string;
+  openRouterModelFromDatabase: boolean;
   thinkingLevel: string;
   thinkingLevelFromDatabase: boolean;
   maxOutputTokens: number;
@@ -22,6 +26,7 @@ export interface AiProbeResult {
 export interface AiFailure {
   occurredAt: string;
   kind: string;
+  provider: string | null;
   model: string | null;
   thinkingLevel: string | null;
   durationMs: number | null;
@@ -29,9 +34,11 @@ export interface AiFailure {
   reason: string;
 }
 
-// Ein leeres Feld bedeutet "zurueck zur Umgebungsvariable" - deshalb sind alle drei optional.
+// Ein leeres Feld bedeutet "zurueck zur Umgebungsvariable" - deshalb sind alle optional.
 export interface UpdateAiSettings {
+  provider?: string;
   model?: string;
+  openRouterModel?: string;
   thinkingLevel?: string;
   maxOutputTokens?: number;
 }
