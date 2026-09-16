@@ -5,7 +5,11 @@ import { apiErrorMessage } from '../api/errors';
 export default function AdminPage() {
   const [settings, setSettings] = useState<AiSettings | null>(null);
   const [failures, setFailures] = useState<AiFailure[]>([]);
+  // Leer heisst "kein expliziter Wunsch" - dieselbe Notbremse wie bei den Textfeldern, nur als
+  // eigene Auswahloption nachgebildet, weil ein <select> kein leeres Eingabefeld kennt.
+  const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
+  const [openRouterModel, setOpenRouterModel] = useState('');
   const [thinkingLevel, setThinkingLevel] = useState('');
   const [maxOutputTokens, setMaxOutputTokens] = useState('');
   const [probe, setProbe] = useState<AiProbeResult | null>(null);
@@ -19,7 +23,9 @@ export default function AdminPage() {
   // waere weg.
   const uebernehmen = (s: AiSettings) => {
     setSettings(s);
+    setProvider(s.providerFromDatabase ? s.provider : '');
     setModel(s.modelFromDatabase ? s.model : '');
+    setOpenRouterModel(s.openRouterModelFromDatabase ? s.openRouterModel : '');
     setThinkingLevel(s.thinkingLevelFromDatabase ? s.thinkingLevel : '');
     setMaxOutputTokens(s.maxOutputTokensFromDatabase ? String(s.maxOutputTokens) : '');
   };
@@ -45,8 +51,14 @@ export default function AdminPage() {
 
     setBusy('speichern');
     try {
+      // Immer alle Felder mitschicken, auch die des gerade nicht gewaehlten Anbieters:
+      // sie stehen unveraendert im State, solange ihr Eingabefeld nur ausgeblendet und nicht
+      // entfernt ist. Wuerden wir sie beim Umschalten weglassen, gaelte "fehlendes Feld = zurueck
+      // zur Umgebung" auch hier - und Geminis Modell ginge beim ersten Speichern unter OpenRouter verloren.
       const res = await adminApi.updateSettings({
+        provider: provider || undefined,
         model: model.trim() || undefined,
+        openRouterModel: openRouterModel.trim() || undefined,
         thinkingLevel: thinkingLevel.trim() || undefined,
         maxOutputTokens: maxOutputTokensValue,
       });
@@ -79,6 +91,13 @@ export default function AdminPage() {
   const herkunft = (ausDatenbank: boolean, wert: string | number) =>
     ausDatenbank ? 'gespeichert' : `aus der Umgebung: ${wert}`;
 
+  const anbieterName = (p: string) => (p === 'openrouter' ? 'OpenRouter' : 'Google Gemini');
+
+  // Solange die Auswahl auf "aus der Umgebung" steht (provider === ''), gilt fuer die Anzeige
+  // trotzdem der tatsaechlich aktive Anbieter - sonst wuerden bei OpenRouter aus der Umgebung
+  // faelschlich die Gemini-Felder erscheinen.
+  const effectiveProvider = provider || settings?.provider || 'gemini';
+
   if (!settings && !error) return <p>Lädt…</p>;
 
   return (
@@ -89,20 +108,53 @@ export default function AdminPage() {
       {settings && (
         <form onSubmit={speichern} className="admin-form">
           <label>
-            Modell
-            <input value={model} onChange={e => setModel(e.target.value)} placeholder={settings.model} />
-            <small>{herkunft(settings.modelFromDatabase, settings.model)}</small>
+            Anbieter
+            {/* Die leere Option ist die Notbremse fuer ein <select>: sie steht fuer "kein
+                expliziter Wunsch", genau wie ein geleertes Textfeld. Ohne sie wuerde jedes
+                Speichern den Anbieter aus der Umgebung stillschweigend in der Datenbank festschreiben. */}
+            <select value={provider} onChange={e => setProvider(e.target.value)}>
+              <option value="">{`aus der Umgebung: ${anbieterName(settings.provider)}`}</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="openrouter">OpenRouter</option>
+            </select>
+            <small>{herkunft(settings.providerFromDatabase, anbieterName(settings.provider))}</small>
           </label>
 
-          <label>
-            Denkstufe
-            <input
-              value={thinkingLevel}
-              onChange={e => setThinkingLevel(e.target.value)}
-              placeholder={settings.thinkingLevel}
-            />
-            <small>{herkunft(settings.thinkingLevelFromDatabase, settings.thinkingLevel)}</small>
-          </label>
+          {effectiveProvider === 'gemini' ? (
+            <>
+              <label>
+                Modell
+                <input value={model} onChange={e => setModel(e.target.value)} placeholder={settings.model} />
+                <small>{herkunft(settings.modelFromDatabase, settings.model)}</small>
+              </label>
+
+              <label>
+                Denkstufe
+                <input
+                  value={thinkingLevel}
+                  onChange={e => setThinkingLevel(e.target.value)}
+                  placeholder={settings.thinkingLevel}
+                />
+                <small>{herkunft(settings.thinkingLevelFromDatabase, settings.thinkingLevel)}</small>
+              </label>
+            </>
+          ) : (
+            <label>
+              OpenRouter-Modell
+              <input
+                value={openRouterModel}
+                onChange={e => setOpenRouterModel(e.target.value)}
+                placeholder={settings.openRouterModel}
+              />
+              <small>{herkunft(settings.openRouterModelFromDatabase, settings.openRouterModel)}</small>
+              <small>
+                Nur Modelle mit erzwungenem Schema funktionieren. Am 2026-09-16 waren das:
+                nex-agi/nex-n2.5-pro:free, nex-agi/nex-n2.5-mini:free,
+                dots-studio/dots-3-note-preview:free, nvidia/nemotron-3-super-120b-a12b:free,
+                liquid/lfm-2.5-2.6b:free. Prüfe einen anderen Namen mit „Verbindung testen".
+              </small>
+            </label>
+          )}
 
           <label>
             Ausgabe-Token
@@ -134,8 +186,17 @@ export default function AdminPage() {
         <section className="probe-result">
           <h2>Ergebnis der Probe</h2>
           <p>
-            {probe.model} · {probe.thinkingLevel} · Status {probe.statusCode === 0 ? 'keine Antwort' : probe.statusCode}
-            {' · '}{probe.durationMs} ms
+            {/* Anbieter zuerst: bei einem Feature, dessen Zweck der Vergleich zweier Anbieter
+                ist, gehoert hierhin, wer geantwortet hat. thinkingLevel via filter(Boolean)
+                weggelassen statt unbedingt gerendert - sonst liest die Zeile bei OpenRouter
+                "nex-agi/… ·  · Status 200" mit leerer Mitte, weil dort keine Denkstufe existiert. */}
+            {[
+              anbieterName(settings?.provider ?? 'gemini'),
+              probe.model,
+              probe.thinkingLevel,
+              `Status ${probe.statusCode === 0 ? 'keine Antwort' : probe.statusCode}`,
+              `${probe.durationMs} ms`,
+            ].filter(Boolean).join(' · ')}
           </p>
           <pre>{probe.rawBody}</pre>
         </section>
@@ -148,13 +209,14 @@ export default function AdminPage() {
         ) : (
           <table>
             <thead>
-              <tr><th>Zeitpunkt</th><th>Art</th><th>Modell</th><th>Dauer</th><th>Status</th><th>Grund</th></tr>
+              <tr><th>Zeitpunkt</th><th>Art</th><th>Anbieter</th><th>Modell</th><th>Dauer</th><th>Status</th><th>Grund</th></tr>
             </thead>
             <tbody>
               {failures.map((f, i) => (
                 <tr key={i}>
                   <td>{new Date(f.occurredAt).toLocaleString('de-DE')}</td>
                   <td>{f.kind}</td>
+                  <td>{f.provider ?? '–'}</td>
                   <td>{f.model ?? '–'}</td>
                   <td>{f.durationMs != null ? `${f.durationMs} ms` : '–'}</td>
                   <td>{f.statusCode ?? '–'}</td>
