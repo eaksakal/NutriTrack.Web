@@ -19,7 +19,9 @@ export interface AiProbeResult {
   statusCode: number;
   durationMs: number;
   model: string;
-  thinkingLevel: string;
+  // Nullable, weil das C#-Feld es ist: OpenRouter kennt keine Denkstufe. "string" allein liesse
+  // TypeScript das nicht pruefen - es behauptet nur einen Typ, den das Backend nicht einhaelt.
+  thinkingLevel: string | null;
   rawBody: string;
 }
 

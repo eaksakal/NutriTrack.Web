@@ -186,8 +186,17 @@ export default function AdminPage() {
         <section className="probe-result">
           <h2>Ergebnis der Probe</h2>
           <p>
-            {probe.model} · {probe.thinkingLevel} · Status {probe.statusCode === 0 ? 'keine Antwort' : probe.statusCode}
-            {' · '}{probe.durationMs} ms
+            {/* Anbieter zuerst: bei einem Feature, dessen Zweck der Vergleich zweier Anbieter
+                ist, gehoert hierhin, wer geantwortet hat. thinkingLevel via filter(Boolean)
+                weggelassen statt unbedingt gerendert - sonst liest die Zeile bei OpenRouter
+                "nex-agi/… ·  · Status 200" mit leerer Mitte, weil dort keine Denkstufe existiert. */}
+            {[
+              anbieterName(settings?.provider ?? 'gemini'),
+              probe.model,
+              probe.thinkingLevel,
+              `Status ${probe.statusCode === 0 ? 'keine Antwort' : probe.statusCode}`,
+              `${probe.durationMs} ms`,
+            ].filter(Boolean).join(' · ')}
           </p>
           <pre>{probe.rawBody}</pre>
         </section>
