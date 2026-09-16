@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { adminApi } from '../api/admin';
 
 export default function Layout() {
   const { email, logout } = useAuth();
@@ -9,6 +11,15 @@ export default function Layout() {
     logout();
     navigate('/login');
   };
+
+  // Die Sichtbarkeit haengt an derselben 404-Antwort, die auch den Zugriff regelt. Ein zweites
+  // Merkmal im Token waere eine zweite Wahrheit darueber, wer Administrator ist - und die beiden
+  // liefen frueher oder spaeter auseinander.
+  const [istAdmin, setIstAdmin] = useState(false);
+
+  useEffect(() => {
+    adminApi.getSettings().then(() => setIstAdmin(true)).catch(() => setIstAdmin(false));
+  }, []);
 
   return (
     <div className="app">
@@ -21,6 +32,7 @@ export default function Layout() {
           <nav className="nav">
             <Link to="/search">Suche</Link>
             <Link to="/goals">Ziele</Link>
+            {istAdmin && <Link to="/admin">KI</Link>}
             <span className="user-email">{email}</span>
             <button onClick={handleLogout} className="btn-logout">Logout</button>
           </nav>

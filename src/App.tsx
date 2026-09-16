@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import SearchPage from './pages/SearchPage';
 import GoalsPage from './pages/GoalsPage';
 import AiEntryPage from './pages/AiEntryPage';
+import AdminPage from './pages/AdminPage';
 import './App.css';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/ai" element={<AiEntryPage />} />
             <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

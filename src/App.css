@@ -871,3 +871,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   .overlay-head { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
 }
 
+/* KI-Verwaltung. Die beiden overflow-Regeln sind kein Beiwerk: ein Ausnahmetext von 200 Zeichen
+   und eine entgleiste Rohantwort sprengen sonst auf dem Telefon die Seitenbreite. */
+.admin-page h1 { font-size: 1.3rem; margin-bottom: 1rem; }
+.admin-page h2 { font-size: 1.05rem; margin: 1.5rem 0 0.6rem; }
+.admin-form { display: flex; flex-direction: column; gap: 1rem; max-width: 30rem; }
+.admin-form label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; }
+.admin-form input { padding: 0.5rem 0.7rem; border-radius: var(--radius); }
+.admin-form small { color: var(--text-muted); font-size: 0.8rem; }
+.admin-page .hint { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+.admin-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.probe-result pre { background: rgba(0,0,0,0.25); padding: 0.8rem; border-radius: var(--radius); font-size: 0.8rem; white-space: pre-wrap; word-break: break-all; max-height: 18rem; overflow-y: auto; }
+.failures { overflow-x: auto; }
+.failures table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.failures th, .failures td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+.failures td.reason { white-space: normal; min-width: 18rem; word-break: break-word; }
+
