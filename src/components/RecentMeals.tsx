@@ -14,6 +14,9 @@ interface Props {
  * Zuletzt Gegessenes als Ein-Klick-Vorlage. Der Server legt je Klick einen EIGENEN Eintrag an
  * (POST /api/meals/{id}/repeat) und erhoeht nicht die Menge des Originals: der zweite Kaffee ist
  * ein zweiter Kaffee, mit eigener Uhrzeit und eigener Mahlzeit.
+ *
+ * Die Liste steht als Akkordion ueber der KI-Eingabe und ist zugeklappt: der Normalfall ist das
+ * Eintippen eines neuen Gerichts, die Vorlagen sind eine Abkuerzung fuer den Wiederholungsfall.
  */
 export default function RecentMeals({ date, onAdded }: Props) {
   const [entries, setEntries] = useState<MealEntry[]>([]);
@@ -65,8 +68,14 @@ export default function RecentMeals({ date, onAdded }: Props) {
   if (laedt || entries.length === 0) return null;
 
   return (
-    <div className="recent-meals">
-      <h2>Zuletzt gegessen</h2>
+    <details className="recent-meals">
+      <summary className="recent-summary">
+        <svg className="recent-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+        <h2>Zuletzt gegessen</h2>
+        <span className="recent-count">{entries.length}</span>
+      </summary>
       {fehler && <div className="error-msg">{fehler}</div>}
       <ul className="recent-list">
         {entries.map(entry => (
@@ -103,6 +112,6 @@ export default function RecentMeals({ date, onAdded }: Props) {
           </li>
         ))}
       </ul>
-    </div>
+    </details>
   );
 }
