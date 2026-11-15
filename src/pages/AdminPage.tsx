@@ -10,6 +10,7 @@ export default function AdminPage() {
   const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
   const [openRouterModel, setOpenRouterModel] = useState('');
+  const [ollamaModel, setOllamaModel] = useState('');
   const [thinkingLevel, setThinkingLevel] = useState('');
   const [maxOutputTokens, setMaxOutputTokens] = useState('');
   const [probe, setProbe] = useState<AiProbeResult | null>(null);
@@ -26,6 +27,7 @@ export default function AdminPage() {
     setProvider(s.providerFromDatabase ? s.provider : '');
     setModel(s.modelFromDatabase ? s.model : '');
     setOpenRouterModel(s.openRouterModelFromDatabase ? s.openRouterModel : '');
+    setOllamaModel(s.ollamaModelFromDatabase ? s.ollamaModel : '');
     setThinkingLevel(s.thinkingLevelFromDatabase ? s.thinkingLevel : '');
     setMaxOutputTokens(s.maxOutputTokensFromDatabase ? String(s.maxOutputTokens) : '');
   };
@@ -59,6 +61,7 @@ export default function AdminPage() {
         provider: provider || undefined,
         model: model.trim() || undefined,
         openRouterModel: openRouterModel.trim() || undefined,
+        ollamaModel: ollamaModel.trim() || undefined,
         thinkingLevel: thinkingLevel.trim() || undefined,
         maxOutputTokens: maxOutputTokensValue,
       });
@@ -91,7 +94,12 @@ export default function AdminPage() {
   const herkunft = (ausDatenbank: boolean, wert: string | number) =>
     ausDatenbank ? 'gespeichert' : `aus der Umgebung: ${wert}`;
 
-  const anbieterName = (p: string) => (p === 'openrouter' ? 'OpenRouter' : 'Google Gemini');
+  const anbieterName = (p: string) =>
+    p === 'openrouter' ? 'OpenRouter' : p === 'ollama' ? 'Ollama (Gaming-PC)' : 'Google Gemini';
+
+  // Dieselbe Reihenfolge wie IAiProvider.All im Backend. Die Kette laeuft vom eingestellten
+  // Anbieter nach hinten, nie nach vorne (Begruendung in AiProviderChain).
+  const kette = ['ollama', 'openrouter', 'gemini'];
 
   // Solange die Auswahl auf "aus der Umgebung" steht (provider === ''), gilt fuer die Anzeige
   // trotzdem der tatsaechlich aktive Anbieter - sonst wuerden bei OpenRouter aus der Umgebung
@@ -116,11 +124,32 @@ export default function AdminPage() {
               <option value="">{`aus der Umgebung: ${anbieterName(settings.provider)}`}</option>
               <option value="gemini">Google Gemini</option>
               <option value="openrouter">OpenRouter</option>
+              <option value="ollama">Ollama (Gaming-PC)</option>
             </select>
             <small>{herkunft(settings.providerFromDatabase, anbieterName(settings.provider))}</small>
+            <small>
+              {`Reihenfolge bei Ausfall: ${kette.slice(kette.indexOf(effectiveProvider)).map(anbieterName).join(' → ')}`}
+            </small>
           </label>
 
-          {effectiveProvider === 'gemini' ? (
+          {effectiveProvider === 'ollama' && (
+            <label>
+              Ollama-Modell
+              <input
+                value={ollamaModel}
+                onChange={e => setOllamaModel(e.target.value)}
+                placeholder={settings.ollamaModel}
+              />
+              <small>{herkunft(settings.ollamaModelFromDatabase, settings.ollamaModel)}</small>
+              <small>
+                Das Modell muss auf dem PC mit „ollama pull" geholt sein. Am 2026-11-15 verglichen:
+                qwen2.5:14b schätzt Mengen verlässlicher als qwen3:8b. Ist der PC aus, antwortet
+                OpenRouter – „Verbindung testen" prüft trotzdem nur Ollama.
+              </small>
+            </label>
+          )}
+
+          {effectiveProvider === 'gemini' && (
             <>
               <label>
                 Modell
@@ -138,7 +167,9 @@ export default function AdminPage() {
                 <small>{herkunft(settings.thinkingLevelFromDatabase, settings.thinkingLevel)}</small>
               </label>
             </>
-          ) : (
+          )}
+
+          {effectiveProvider === 'openrouter' && (
             <label>
               OpenRouter-Modell
               <input

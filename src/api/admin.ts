@@ -3,12 +3,14 @@ import client from './client';
 // Zu jedem Wert seine Herkunft: "aus der Datenbank" heisst, er ueberschreibt die
 // Umgebungsvariable. Ohne diese Unterscheidung raetselt man, warum ein Eintrag nicht wirkt.
 export interface AiSettings {
-  provider: 'gemini' | 'openrouter';
+  provider: 'gemini' | 'openrouter' | 'ollama';
   providerFromDatabase: boolean;
   model: string;
   modelFromDatabase: boolean;
   openRouterModel: string;
   openRouterModelFromDatabase: boolean;
+  ollamaModel: string;
+  ollamaModelFromDatabase: boolean;
   thinkingLevel: string;
   thinkingLevelFromDatabase: boolean;
   maxOutputTokens: number;
@@ -19,7 +21,7 @@ export interface AiProbeResult {
   statusCode: number;
   durationMs: number;
   model: string;
-  // Nullable, weil das C#-Feld es ist: OpenRouter kennt keine Denkstufe. "string" allein liesse
+  // Nullable, weil das C#-Feld es ist: OpenRouter und Ollama kennen keine Denkstufe. "string" allein liesse
   // TypeScript das nicht pruefen - es behauptet nur einen Typ, den das Backend nicht einhaelt.
   thinkingLevel: string | null;
   rawBody: string;
@@ -41,6 +43,7 @@ export interface UpdateAiSettings {
   provider?: string;
   model?: string;
   openRouterModel?: string;
+  ollamaModel?: string;
   thinkingLevel?: string;
   maxOutputTokens?: number;
 }
